@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Дневник</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Arsenal|Pangolin" rel="stylesheet">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        /* Группы стилизации, каждая со своим именем, для назначения элементам */
+
+        body {
+            font-family: 'Arsenal', sans-serif;
+        }
+
+        .djornovoHeader {
+            font-family: 'Pangolin', cursive;
+        }
+
+        .diary {
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        .date {
+            color: orange;
+            font-size: 10px;
+        }
+
+        .entry__header {
+            color: red;
+        }
+
+        .entry__body {
+        }
+
+        .form {
+            padding: 20px 40px;
+            margin: 50px 0;
+            background: aliceblue;
+        }
+
+        .form__post-body {
+            width: 100%;
+            height: 100px;
+            font-family: Arial, sans-serif;
+        }
+
+        hr {
+            border: 0;
+            background: lightblue;
+            height: 1px;
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+<script>
+  /**
+   * Образец журнала
+   */
+  class Diary {
+    constructor() {
+      // Создаем корневой элемент журнала и добавляем его к <BODY>
+      this.diaryElement = document.createElement('div');
+      this.diaryElement.classList.add('index.html');
+      document.body.appendChild(this.diaryElement);
+      // Наполняем список записей экземплярами шаблона записи журнала
+      this.entries = this.loadEntries();
+      // Выполняем метод перерисовки журнала на странице
+      this.render();
+    }
+
+    /**
+     * Метод для добавления новой записи
+     */
+    addEntry(header, body, date) {
+      this.entries.unshift(new Entry(header, body, date, this.deleteEntryFn.bind(this)));
+      this.saveEntries();
+      this.render();
+    }
+
+    /**
+     * Метод сохранения записей в хранилище
+     */
+    saveEntries() {
+      let data = [];
+      this.entries.forEach(entry => {
+        data.push(entry.getContent());
+      });
+      localStorage.journal = JSON.stringify(data);
+    }
+
+    /**
+     * Метод загрузки всех записей из хранилища
+     */
+    loadEntries() {
+      let entries = [];
+      let data = JSON.parse(localStorage.journal || '[]');
+      data.forEach(entryData => {
+        entries.push(new Entry(entryData.header, entryData.body, entryData.date, this.deleteEntryFn.bind(this)));
+      });
+      return entries;
+    }
+
+    /**
+     * Метод для удаленя отдельной записи, передается в образец записи журнала при его создании
+     */
+    deleteEntryFn(entryDate) {
+      this.entries.map((entry, idx, entries) => {
+        if (entryDate === entry.getContent().date) {
+          entries.splice(idx, 1);
+        }
+      });
+      this.saveEntries();
+      this.render();
+    }
+
+    // Создаем форму добавления записи
+    _renderEntryForm() {
+      let addEntryForm = document.createElement('div');
+      addEntryForm.classList.add('form');
+
+      // Заголовок формы
+      let header = document.createElement('h2');
+      header.textContent = 'Добавить запись';
+      addEntryForm.appendChild(header);
+
+      // поле ввода заголовка записи
+      let postHeader = document.createElement('input');
+      postHeader.type = 'text';
+      postHeader.placeholder = 'Введите заголовок записи';
+      postHeader.style.width = '100%';
+      postHeader = document.createElement('div').appendChild(postHeader);
+
+      // поле ввода текста записи
+      let postBody = document.createElement('textarea');
+      postBody.placeholder = 'И текст записи журнала';
+      postBody.classList.add('form__post-body');
+
+      // кнопка сохранения записи
+      let saveButton = document.createElement('button');
+      saveButton.type = 'button';
+      saveButton.textContent = 'Сохранить';
+      saveButton.addEventListener('click', () => {
+        if (postHeader.value && postBody.value) {
+          this.addEntry(postHeader.value, postBody.value);
+        }
+      });
+
+      let $container = document.createElement('div');
+      let postHeaderContainer = $container.cloneNode(false);
+      postHeaderContainer.appendChild(postHeader);
+      addEntryForm.appendChild(postHeaderContainer);
+
+      let postBodyContainer = $container.cloneNode(false);
+      postBodyContainer.appendChild(postBody);
+      addEntryForm.appendChild(postBodyContainer);
+
+      let saveButtonContainer = $container.cloneNode(false);
+      saveButtonContainer.appendChild(saveButton);
+      saveButtonContainer.style.fontSize = '12px';
+
+      addEntryForm.appendChild(saveButtonContainer);
+
+      return addEntryForm;
+    }
+
+    /**
+     * Перерисовка содержимого журнала заново с учетом новых записей
+     */
+    render() {
+      let header = document.createElement('h1');
+      header.textContent = 'Журнал';
+      header.classList.add('djornovoHeader')
+
+      let entries = document.createElement('div');
+      // Заполняем элемент записей отрисованными записями
+      this.entries.forEach(entry => {
+        entries.appendChild(document.createElement('hr'));
+        entries.appendChild(entry.render());
+      });
+      // Очищаем содержимое корневого элемента журнала и добавляем в него заголовок и записи
+      this.diaryElement.innerHTML = '';
+      this.diaryElement.appendChild(header);
+      this.diaryElement.appendChild(entries);
+      this.diaryElement.appendChild(this._renderEntryForm());
+    }
+  }
+
+  /**
+   * Образец записи в журнале
+   */
+  class Entry {
+    constructor(header, body, date = new Date(), deleteEntryFn) {
+      // Действия выполняемые при создании записи
+      this.header = header;
+      this.body = body;
+      if (typeof date === 'string') {
+        this.date = new Date(date)
+      } else {
+        this.date = date;
+      }
+      this.deleteSelf = deleteEntryFn;
+    }
+
+    /**
+     * Запрашиваем только текст и дату записи
+     */
+    getContent() {
+      return {
+        date: this.date,
+        header: this.header,
+        body: this.body
+      }
+    }
+
+    /**
+     * Отрисовка содержимого записи в журнале
+     * @returns {Element}
+     */
+    render() {
+      let element = document.createElement('div');
+
+      let date = document.createElement('div');
+      let month = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+      let monthNomber = this.date.getMonth();
+      date.textContent = this.date.getHours() + ':' + this.date.getMinutes() +
+        '; ' + this.date.getDate() + ' ' + month[monthNomber] + ' ' + this.date.getFullYear();
+      date.classList.add('date');
+
+      let header = document.createElement('h2');
+      header.textContent = this.header;
+      header.classList.add('entry__header');
+
+      let body = document.createElement('p');
+      body.textContent = this.body;
+      body.classList.add('entry__body');
+
+      let del = document.createElement('a');
+      del.textContent = 'удалить';
+      del.href = '';
+      del.addEventListener('click', (event) => {
+        event.preventDefault();
+        this.deleteSelf(this.date);
+      });
+
+      element.appendChild(date);
+      element.appendChild(header);
+      element.appendChild(body);
+      element.appendChild(del);
+
+      return element;
+    }
+  }
+
+  // создаем образец журнала
+  let diary = new Diary();
+
+</script>
+
+</body>
+</html>

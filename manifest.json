@@ -13,7 +13,7 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "/diary/",
+  "start_url": "/diary/index.html",
   "background_color": "#3367D6",
   "display": "standalone",
   "scope": "/diary/",
